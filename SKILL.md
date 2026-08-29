@@ -267,4 +267,6 @@ Vidmoat specifics: `get_command_schema` for the full op list,
 ---
 
 *Canonical copy: https://www.vidmoat.com/skill.md · fetch via the `get_skill`
-MCP tool · corrections welcome through `report_issue`.*
+MCP tool · public mirror and issues:
+https://github.com/fredabila/vidmoat-skill · corrections also welcome through
+`report_issue` from inside a session.*
