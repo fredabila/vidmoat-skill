@@ -1,0 +1,49 @@
+# Keep this mirror honest.
+#
+# Two copies of a document drift; that is not a risk, it is a certainty. Rather
+# than ask a human to remember, this refetches the canonical copy and commits
+# only when the bytes actually changed. If vidmoat.com is down or serves an
+# error page, the guard below leaves the existing file alone rather than
+# committing a 502 over a good manual.
+name: Sync SKILL.md from canonical
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch canonical
+        run: |
+          curl -fsSL --max-time 30 https://www.vidmoat.com/skill.md -o fetched.md
+
+      - name: Refuse anything that is not the manual
+        run: |
+          # A 200 that is really an error page, a login redirect, or a truncated
+          # response would otherwise be committed as the new truth.
+          bytes=$(wc -c < fetched.md)
+          if [ "$bytes" -lt 4000 ]; then
+            echo "fetched only $bytes bytes; refusing to overwrite"; exit 1
+          fi
+          head -1 fetched.md | grep -q '^# Editing video with Vidmoat' || {
+            echo "first line is not the manual heading; refusing"; exit 1; }
+
+      - name: Commit if changed
+        run: |
+          if cmp -s fetched.md SKILL.md; then
+            echo "no change"; rm fetched.md; exit 0
+          fi
+          mv fetched.md SKILL.md
+          git config user.name  'vidmoat-sync'
+          git config user.email 'sync@vidmoat.com'
+          git add SKILL.md
+          git commit -m 'sync: SKILL.md from vidmoat.com/skill.md'
+          git push
