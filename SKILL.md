@@ -1,3 +1,8 @@
+---
+name: vidmoat-editing
+description: Edit existing footage and create designed videos in Vidmoat using its MCP tools. Use for pacing, captions, motion, sound design, and checking the saved edit against the user's brief.
+---
+
 # Editing video with Vidmoat
 
 A working manual for an AI agent driving Vidmoat over MCP. Read it once at the
@@ -22,22 +27,48 @@ get_project            see what exists
 preview_strip          SEE it, do not imagine it
 plan the whole edit    beats first, commands second
 edit_project           in batches, with previewAt
-READ THE LINT          it is not advisory
+READ THE RECEIPTS      identify rejected fields and missing edits
+REVIEW THE LINT        distinguish defects from advisory notes
 preview_frame          look again at what you changed
 fix, then render
 ```
 
-**You are editing blind unless you look.** Numeric x/y/fontSize choices
-routinely overlap or misalign on the real canvas. A run that never called
-`preview_frame` has not verified anything, and "it should be fine" is not
-verification. This is the single largest quality difference between runs.
+**Inspect visual edits on the real canvas.** Numeric x/y/fontSize choices can
+overlap or misalign. Use saved preview frames, a strip or the saved-edit review
+tool appropriate to the change. Looking only at the source does not verify the
+edited result, and reading back the requested coordinates is not a visual check.
 
-**Read the lint.** `edit_project` returns `lint[]`. It reports overlapping text,
-offscreen elements, unreadable sizes. Fix every warning before rendering. A lint
-warning is a defect that a human will see immediately.
+**Read the lint in context.** `edit_project` reports layout problems and advisory
+notes. Inspect warnings about overlapping text, offscreen elements and readability
+in the saved preview. Repair actual defects introduced by your edit; a `note`,
+intentional overlap or unchanged pre-existing warning is not a reason to restyle
+the user's project. Static frames do not verify continuous motion or audio.
 
-**Batch, do not trickle.** One `edit_project` with twenty commands beats twenty
-calls. Each round trip costs the user money and wall time.
+**Batch coherent changes.** Group related edits, inspect the result, then continue.
+Do not replay a successful batch after a later tool failure. Bigger batches are
+not inherently better when one command depends on evidence from another.
+
+**Keep the brief through follow-ups.** Turn the request into concrete acceptance
+points: exact trims, content to preserve, caption treatment, motion, sound and
+output format. A reply such as “yes”, “more exciting” or “the blue one” refines
+that brief. Ask only for a consequential missing choice; proceed with reasonable
+creative decisions when the user has delegated them. Never replace the original
+task with your own previous summary or claim of completion.
+
+**An accepted command is not a finished edit.** Read every result and
+`droppedFields` warning. `alreadyAtRequestedValues` means that setter is satisfied;
+do not nudge a correct value to manufacture a change. A no-op error requires
+reading the target and command schema. Correct the named field or operation;
+do not repeat the same failed arguments unchanged. Preserve work that landed.
+After two identical failures, inspect new evidence or explain the specific block.
+Use execution receipts to identify commands; a failure index cannot be joined to
+cumulative planner history without its batch identity.
+
+**Close against the acceptance points.** Check the saved revision at the opening,
+key editorial moments and ending. Preview motion across time and verify audio
+using audio-capable evidence. If a check is unavailable or issues remain, report
+what is saved and what is incomplete. Never substitute “applied N commands” for
+fulfilling the brief, and never call a queued render a completed export.
 
 ---
 
@@ -104,9 +135,22 @@ text a 0.2 to 0.35s entrance and a 0.15 to 0.25s exit. Stagger related elements
 (`easeOutCubic`, `easeOutExpo`); linear reads as robotic and `easeInOut` on a
 short entrance reads as sluggish.
 
-**Captions are not titles.** Captions are a transcript for sound-off viewing:
-small, consistent position, high contrast, 3 to 7 words per line. Titles are
-editorial: large, moments, sparse. Do not style captions like titles.
+**Distinguish transcript captions from emphasis.** Keep the speech readable and
+timed accurately. When the user asks for expressive captions, combine readable
+caption groups with selected large words, kinetic titles or designed cards that
+use the available space. Adapt placement to the speaker and product; avoid faces,
+hands demonstrating a feature and important screen content. Emphasis text must
+support what was actually said, not invent product claims.
+
+For an energetic consumer-tech review, build beats around the hook, product
+reveal, demonstrated benefits, drawbacks and verdict. Use measured speech timing
+to place feature labels, comparisons or punch-ins where those ideas occur. Vary
+the rhythm and hold on demonstrations long enough to understand them. If requested,
+trim sitting down/getting up using inspected boundaries without clipping speech.
+Choose music that fits the intended energy, duck it under dialogue and use a few
+motivated sound accents. Review a short representative section before extending
+the treatment. These are choices within the brief, not mandatory decorations for
+every video. A 4K export setting does not restore detail missing from the source.
 
 ---
 
@@ -184,6 +228,10 @@ cheapest thing you will do today.
 - **Check the enum name against the parameter name.** The schema prints
   `{param: type}`. `preset: 'filterPreset'` means the parameter is `preset` and
   its type is the enum named `filterPreset`.
+- **Use the operation that owns a field.** `updateClip.patch` accepts placement,
+  `trackIndex` and `loop`. Text content/style belongs to `setTextStyle`, colour
+  adjustments to `setColor`, and masks to `setMask`. Follow the current schema
+  and returned correction; do not treat every property as an `updateClip` field.
 - **`list_projects` returns a WINDOW.** It reports `total`, `returned` and
   `truncated`. Never answer "how many projects do I have" from the array length.
 - **A `blob:` src is a dead clip.** It only ever worked in the browser tab that
